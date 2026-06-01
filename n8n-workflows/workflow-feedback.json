@@ -1,0 +1,649 @@
+{
+  "name": "Workflow 3 — Informe diario programado",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "evento-tarea",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "525705ff-cbe7-42f1-ac32-31977929ac73",
+      "name": "Webhook Tarea",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        128
+      ],
+      "webhookId": "evento-tarea-wh"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-prioridad-alta",
+              "leftValue": "={{ $json.tarea.prioridad }}",
+              "rightValue": "alta",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "eb068721-9530-4ebb-bfb1-0a82875609cf",
+      "name": "IF Alta Prioridad",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/chat",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "session_id",
+              "value": "n8n-wf1"
+            },
+            {
+              "name": "mensaje",
+              "value": "={{ 'Da un consejo breve para gestionar esta tarea urgente: \\'' + $json.tarea.titulo + '\\'' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dd054a34-5c18-4b75-99f3-edcc609f17b5",
+      "name": "HTTP POST Chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f3e5b1aa-0201-4289-8fbc-a44531e43101",
+      "name": "Set Urgente True",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "5555f026-2256-4304-982b-3057b80541de",
+      "name": "Set Urgente False",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9cffabfb-50ed-495f-9bf9-99e93e4d913f",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        448,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "9af2832d-549e-41f4-b4dd-fe975f65533e",
+      "name": "Set Timestamp",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, urgente: $json.urgente, consejo: $json.consejo || null, timestamp: $json.timestamp }) }}",
+        "options": {}
+      },
+      "id": "23ae5121-710a-4cdf-a850-a0995f0e9d4c",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "feedback",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a546ce57-940d-4366-977a-d65331ade4e2",
+      "name": "Webhook Feedback",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        752
+      ],
+      "webhookId": "feedback-wh"
+    },
+    {
+      "parameters": {
+        "url": "=http://127.0.0.1:8000/usuarios/{{ $json.body.usuario_id }}",
+        "options": {}
+      },
+      "id": "3fc810aa-cd20-4ec9-91b7-88cd4b4ee2c9",
+      "name": "HTTP GET Usuario",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -32,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-cal-baja",
+              "leftValue": "={{ $('Webhook Feedback').item.json.body.calificacion }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "826a9fd9-b740-4ab4-aa98-1dcb1bff717f",
+      "name": "IF Calificacion Baja",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/tareas",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "titulo",
+              "value": "={{ 'Ticket feedback: ' + $json.problema_principal }}"
+            },
+            {
+              "name": "prioridad",
+              "value": "alta"
+            },
+            {
+              "name": "descripcion",
+              "value": "={{ \"Usuario: \" + $('HTTP GET Usuario').item.json.nombre + \" | Cal: \" + $('Webhook Feedback').item.json.body.calificacion + \"/5 | \" + $('Webhook Feedback').item.json.body.mensaje }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fd4ab61e-e961-475c-9961-8932aa61ae85",
+      "name": "HTTP POST Tarea",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        624,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "aad0ed37-db87-4b4a-b66f-c397f17fd8e0",
+      "name": "Set Ticket True",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "26c064f8-fa9e-48c7-af7a-9fa7f79d0d71",
+      "name": "Set Ticket False",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/chat",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "session_id",
+              "value": "n8n-wf2"
+            },
+            {
+              "name": "mensaje",
+              "value": "={{ \"Analiza este feedback de \" + $('HTTP GET Usuario').item.json.nombre + \" (plan: \" + $('HTTP GET Usuario').item.json.plan + \"): \" + $('Webhook Feedback').item.json.body.mensaje + \" — Calificación: \" + $('Webhook Feedback').item.json.body.calificacion + \"/5. Devuelve JSON: { sentimiento, problema_principal, accion }\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb2dfd47-e9e9-4996-a57f-fe1d221ccfc6",
+      "name": "HTTP POST Chat1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        192,
+        752
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "938b48af-d1a4-4dce-b0ea-d4d2f4127947",
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1072,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, sentimiento: $json.sentimiento, ticket_creado: $json.ticket_creado }) }}",
+        "options": {}
+      },
+      "id": "e9781d15-78b8-48a9-9574-9dc977691d37",
+      "name": "Respond to Webhook1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "536c900e-d6a5-4627-a607-221671324568",
+      "name": "Schedule 9:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        384,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/tareas?completada=false",
+        "options": {}
+      },
+      "id": "38252543-f82b-4aaf-b4c9-3f554b8841de",
+      "name": "HTTP GET Tareas Pendientes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        608,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const tareas = $input.all().map(i => i.json);\nconst porPrioridad = tareas.reduce((acc, t) => {\n  acc[t.prioridad] = (acc[t.prioridad] || 0) + 1;\n  return acc;\n}, {});\nreturn [{ json: { total: tareas.length, porPrioridad, porPrioridadStr: JSON.stringify(porPrioridad) } }];"
+      },
+      "id": "1641b4ec-0579-4eb8-8be0-2eb7b19a5d3f",
+      "name": "Code Agrupar por Prioridad",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/api/chat",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "session_id",
+              "value": "n8n-wf3-informe"
+            },
+            {
+              "name": "mensaje",
+              "value": "={{ 'Genera un informe diario ejecutivo en 3 párrafos. Tareas pendientes: ' + $json.total + '. Por prioridad: ' + $json.porPrioridadStr + '. Incluye una recomendación de acción.' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c79414e2-ae46-45fd-9f9f-ec7d8f5fe7b8",
+      "name": "HTTP POST Chat Informe",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1056,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const entrada = {\n  fecha: new Date().toISOString(),\n  informe: $json.respuesta,\n  stats: {\n    total: $('Code Agrupar por Prioridad').item.json.total,\n    porPrioridad: $('Code Agrupar por Prioridad').item.json.porPrioridad\n  }\n};\n\nreturn [{ json: { guardado: true, fecha: entrada.fecha, informe: entrada.informe, stats: entrada.stats } }];"
+      },
+      "id": "48051e51-db55-479d-95fc-f9090f79fdfc",
+      "name": "Code Guardar Informe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        384
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Tarea": {
+      "main": [
+        [
+          {
+            "node": "IF Alta Prioridad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Alta Prioridad": {
+      "main": [
+        [
+          {
+            "node": "HTTP POST Chat",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Urgente False",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP POST Chat": {
+      "main": [
+        [
+          {
+            "node": "Set Urgente True",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Urgente True": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Urgente False": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Set Timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Timestamp": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Feedback": {
+      "main": [
+        [
+          {
+            "node": "HTTP GET Usuario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP GET Usuario": {
+      "main": [
+        [
+          {
+            "node": "HTTP POST Chat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Calificacion Baja": {
+      "main": [
+        [
+          {
+            "node": "HTTP POST Tarea",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Ticket False",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP POST Tarea": {
+      "main": [
+        [
+          {
+            "node": "Set Ticket True",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Ticket True": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Ticket False": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP POST Chat1": {
+      "main": [
+        [
+          {
+            "node": "IF Calificacion Baja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule 9:00": {
+      "main": [
+        [
+          {
+            "node": "HTTP GET Tareas Pendientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP GET Tareas Pendientes": {
+      "main": [
+        [
+          {
+            "node": "Code Agrupar por Prioridad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Agrupar por Prioridad": {
+      "main": [
+        [
+          {
+            "node": "HTTP POST Chat Informe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP POST Chat Informe": {
+      "main": [
+        [
+          {
+            "node": "Code Guardar Informe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5a0b5779-ef53-42a7-8223-4b762100ae6d",
+  "meta": {
+    "instanceId": "eaf64a83e0ad97ac1c918ee4ab2e3bb897e3386e7da201cf1d398ec30a07d7bf"
+  },
+  "id": "ER7pO9JTETHdVde4",
+  "tags": []
+}
